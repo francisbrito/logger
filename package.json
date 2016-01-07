@@ -13,12 +13,14 @@
     "index.js"
   ],
   "scripts": {
-    "test": "mocha --harmony test.js"
+    "test": "mocha --compilers js:babel-register test.js",
+    "prepublish": "$(mkdir build || return 0) && babel index.js > build/index.js"
   },
   "devDependencies": {
+    "babel-preset-stage-3": "^6.3.13",
     "chai": "^2.3.0",
-    "koa": "^0.21.0",
-    "koa-route": "^2.4.1",
+    "koa": "^2.0.0-alpha.3",
+    "koa-route": "^3.0.0",
     "mocha": "^2.2.5",
     "sinon": "^1.14.1",
     "sinon-chai": "^2.7.0",
@@ -30,5 +32,6 @@
     "chalk": "^1.0.0",
     "humanize-number": "~0.0.1",
     "passthrough-counter": "^1.0.0"
-  }
+  },
+  "main": "build/index.js"
 }

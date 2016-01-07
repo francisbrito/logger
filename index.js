@@ -36,51 +36,50 @@ var colorCodes = {
  */
 
 function dev(opts) {
-  return function *logger(next) {
+  return function logger(ctx, next) {
     // request
     var start = new Date;
     console.log('  ' + chalk.gray('<--')
       + ' ' + chalk.bold('%s')
       + ' ' + chalk.gray('%s'),
-        this.method,
-        this.originalUrl);
+        ctx.method,
+        ctx.originalUrl);
 
-    try {
-      yield next;
-    } catch (err) {
-      // log uncaught downstream errors
-      log(this, start, null, err);
-      throw err;
-    }
-
-    // calculate the length of a streaming response
-    // by intercepting the stream with a counter.
-    // only necessary if a content-length header is currently not set.
-    var length = this.response.length;
-    var body = this.body;
-    var counter;
-    if (null == length && body && body.readable) {
-      this.body = body
+    next()
+    .then(function() {
+      // calculate the length of a streaming response
+      // by intercepting the stream with a counter.
+      // only necessary if a content-length header is currently not set.
+      var length = ctx.response.length;
+      var body = ctx.body;
+      var counter;
+      if (null == length && body && body.readable) {
+        ctx.body = body
         .pipe(counter = Counter())
-        .on('error', this.onerror);
-    }
+        .on('error', ctx.onerror);
+      }
 
-    // log when the response is finished or closed,
-    // whichever happens first.
-    var ctx = this;
-    var res = this.res;
+      // log when the response is finished or closed,
+      // whichever happens first.
+      var res = ctx.res;
 
-    var onfinish = done.bind(null, 'finish');
-    var onclose = done.bind(null, 'close');
+      var onfinish = done.bind(null, 'finish');
+      var onclose = done.bind(null, 'close');
 
-    res.once('finish', onfinish);
-    res.once('close', onclose);
+      res.once('finish', onfinish);
+      res.once('close', onclose);
 
-    function done(event){
-      res.removeListener('finish', onfinish);
-      res.removeListener('close', onclose);
-      log(ctx, start, counter ? counter.length : length, null, event);
-    }
+      function done(event){
+        res.removeListener('finish', onfinish);
+        res.removeListener('close', onclose);
+        log(ctx, start, counter ? counter.length : length, null, event);
+      }
+    })
+    .catch(function(err) {
+      // log uncaught downstream errors
+      log(ctx, start, null, err);
+      throw err;
+    });
   }
 }
 
